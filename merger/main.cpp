@@ -37,6 +37,13 @@ void processDir(const std::string& dir) {
 }
 
 void processFile(const std::string& file, bool include) {
+
+    for (const std::string& processedFile : processOnce) {
+        if (processedFile == file) {
+            return;
+        }
+    }
+ 
     if (file == mainFile && mainIsProcessed)return;
     if (fs::path(file).extension() != ".cpp" && !include)return;
     
@@ -58,35 +65,25 @@ void processFile(const std::string& file, bool include) {
         return;
     }
 
-    bool processedOnce = false;
-    for (const std::string& processedFile : processOnce) {
-        if (processedFile == file) {
-            processedOnce = true;
-            break;
-        }
-    }
-
-    if (!processedOnce) {
-        std::ifstream inputFile(file);
-        if (inputFile) {
-            std::string line;
-            std::ofstream output(outputFile, std::ios::app);
-            if (output) {
-                while (std::getline(inputFile, line)) {
-                    if (line.find("#include \"") != std::string::npos) {
-                        std::string includedFile = line.substr(line.find("\"") + 1, line.rfind("\"") - line.find("\"") - 1);
-                        std::string includedFilePath = fs::path(file).parent_path().string() + "/" + includedFile;
-                        processFile(includedFilePath, true);
-                    } else if (line.find("#pragma once") != std::string::npos) {
-                        processOnce.push_back(file);
-                    } else {
-                        output << line << "\n";
-                    }
+    std::ifstream inputFile(file);
+    if (inputFile) {
+        std::string line;
+        std::ofstream output(outputFile, std::ios::app);
+        if (output) {
+            while (std::getline(inputFile, line)) {
+                if (line.find("#include \"") != std::string::npos) {
+                    std::string includedFile = line.substr(line.find("\"") + 1, line.rfind("\"") - line.find("\"") - 1);
+                    std::string includedFilePath = fs::path(file).parent_path().string() + "/" + includedFile;
+                    processFile(includedFilePath, true);
+                } else if (line.find("#pragma once") != std::string::npos) {
+                    processOnce.push_back(file);
+                } else {
+                    output << line << "\n";
                 }
-                output.close();
             }
-            inputFile.close();
+            output.close();
         }
+        inputFile.close();
     }
 
     std::ofstream output(outputFile, std::ios::app);
