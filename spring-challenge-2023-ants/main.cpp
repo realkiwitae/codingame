@@ -30,6 +30,23 @@ int main()
         cells.push_back(cell);
     }
     
+    cells[0].init(0, 0, 0);
+    bool bReady = false;
+    while(!bReady){
+        bReady = true;
+        for(auto& c : cells){
+            if(c.bReady){
+                for(auto n : c.neighbors){
+                    if(!cells[n].bReady){
+                        cells[n].init(c.cubeCoord.neighbor(n).x, c.cubeCoord.neighbor(n).y, c.cubeCoord.neighbor(n).z);
+                    }
+                }
+            }else{
+                bReady = false;
+            }
+        }
+    }
+
     int numberOfBases;
     cin >> numberOfBases; cin.ignore();
     for (int i = 0; i < numberOfBases; i++) {
@@ -62,7 +79,6 @@ int main()
             if (cell.resources > 0) {
                 std::string action("LINE " + std::to_string(myBases[0]) + " " + std::to_string(cell.index) + " 1");
                 actions.push_back(action);
-                break;
             }
         }
 

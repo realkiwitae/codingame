@@ -6,8 +6,8 @@
 #include <algorithm>
 
 class CubeCoord {
-    static std::vector<std::vector<int>> directions;
-    static CubeCoord CENTER;
+    static inline std::vector<int[3]> directions = { { 1, -1, 0 }, { +1, 0, -1 }, { 0, +1, -1 }, { -1, +1, 0 }, { -1, 0, +1 }, { 0, -1, +1 } };
+    static inline CubeCoord CENTER = { 0, 0, 0 };
 
     int x, y, z;
 
