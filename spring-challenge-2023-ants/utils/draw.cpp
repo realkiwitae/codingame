@@ -66,13 +66,16 @@ void drawAnthill(CubeCoord coord, cv::Scalar color, double s = 1){
         cv::line(img, vertices[i], vertices[(i + 1) % 6], cv::Scalar(), 1);
 }
 
-void drawCircle(CubeCoord coord, cv::Scalar color, double s = 1){
+void drawCircle(Cell& c, cv::Scalar color, double s = 1){
 
-    cv::Size2f size(sqrt(3)*s, sqrt(3)*s);
-    
-    cv::Point2f center = pointy_hex_to_pixel(coord, s);    
+    double p = c.richness/100.;
+    p = std::max(std::min(int((p+1/3.)*3)/3., 1.), 0.);
+
+    cv::Size2f size(sqrt(3)*s*p , sqrt(3)*s*p);
+
+    cv::Point2f center = pointy_hex_to_pixel(c.coord, s);    
     // draw filled circle 
-    cv::circle(img, center, size.width/6, color, -1);
+    cv::circle(img, center, size.width*.3, color, -1);
 }
 
 void drawArena(Board& b){
@@ -85,9 +88,9 @@ void drawArena(Board& b){
     for(auto& c : b.cells){
         drawHexagon(c, floor_color, 20);
         if(c.type == Cell::CRYSTAL){
-            drawCircle(c.coord, crystal_color, 20);
+            drawCircle(c, crystal_color, 20);
         }else if(c.type == Cell::EGG){
-            drawCircle(c.coord, egg_color, 20);
+            drawCircle(c, egg_color, 20);
         }
     }
 
