@@ -5,26 +5,17 @@
 #include <cmath>
 #include <algorithm>
 
-class CubeCoord {
-    static inline std::vector<int[3]> directions = { { 1, -1, 0 }, { +1, 0, -1 }, { 0, +1, -1 }, { -1, +1, 0 }, { -1, 0, +1 }, { 0, -1, +1 } };
-    static inline CubeCoord CENTER = { 0, 0, 0 };
 
+class CubeCoord {
+
+    static std::vector<CubeCoord> directions; 
+    static CubeCoord CENTER;
+
+public:
     int x, y, z;
 
 public:
     CubeCoord(int x, int y, int z) : x(x), y(y), z(z) {}
-
-    int getX() const {
-        return x;
-    }
-
-    int getY() const {
-        return y;
-    }
-
-    int getZ() const {
-        return z;
-    }
 
     bool operator==(const CubeCoord& other) const {
         return x == other.x && y == other.y && z == other.z;
@@ -39,9 +30,9 @@ public:
     }
 
     CubeCoord neighbor(int orientation, int distance) const {
-        int nx = x + directions[orientation][0] * distance;
-        int ny = y + directions[orientation][1] * distance;
-        int nz = z + directions[orientation][2] * distance;
+        int nx = x + directions[orientation].x * distance;
+        int ny = y + directions[orientation].y * distance;
+        int nz = z + directions[orientation].z * distance;
 
         return CubeCoord(nx, ny, nz);
     }
@@ -50,8 +41,8 @@ public:
         std::vector<CubeCoord> neighborCoords;
         neighborCoords.reserve(directions.size());
 
-        for (const auto& direction : directions) {
-            CubeCoord next = neighbor(direction[3], 1);
+        for (int i = 0;i < (int)directions.size();i++) {
+            CubeCoord next = neighbor(i, 1);
             neighborCoords.push_back(next);
         }
 

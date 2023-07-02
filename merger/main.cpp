@@ -28,7 +28,9 @@ void processDir(const std::string& dir) {
     for (const auto& entry : fs::directory_iterator(dir)) {
         const std::string& node = entry.path().filename().string();
         const std::string& fullPath = entry.path().string();
-        if (fs::is_directory(node) && node != excludeDir) {
+
+        if (fs::is_directory(fullPath) && node != excludeDir) {
+            std::cout << "Processing directory: " << fullPath << std::endl;
             processDir(fullPath);
         } else{
             processFile(fullPath, false);
@@ -36,7 +38,16 @@ void processDir(const std::string& dir) {
     }
 }
 
-void processFile(const std::string& file, bool include) {
+void processFile(const std::string& path, bool include) {
+        std::string file(path);
+        // simplify fullpath if /.. in it remove the /.. and the previous directory
+        std::string::size_type pos = file.find("/..");
+        while(pos != std::string::npos){
+            std::string::size_type prevPos = file.rfind("/", pos - 1);
+            file.erase(prevPos,pos - prevPos + 3);
+            pos = file.find("/..");
+        }
+
 
     for (const std::string& processedFile : processOnce) {
         if (processedFile == file) {
