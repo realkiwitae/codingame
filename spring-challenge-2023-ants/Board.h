@@ -31,7 +31,7 @@ public:
     int allCrystals = 0;
 
     void init();
-    void update();
+    void read();
 
     int distance(Cell a, Cell b){
         //return a.coordinates.distanceTo(b.coordinates);

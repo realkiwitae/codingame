@@ -45,11 +45,10 @@ int main()
 
 
     board.init();
+    draw_init(board);
     // game loop
-    int turn = 0;
     while (1) {
-        turn++;
-        board.update();
+        board.read();
         drawArena(board);
         cout << "WAIT" << endl;
     }

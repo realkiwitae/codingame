@@ -95,7 +95,8 @@ void Board::init(){
     }
 }
 
-void Board::update(){
+void Board::read(){
+    round++;
     for (int i = 0; i < numberOfCells; i++) {
         int resources; // the current amount of eggs/crystals on this cell
         int myAnts; // the amount of your ants on this cell
@@ -105,6 +106,5 @@ void Board::update(){
         cells[i].richness = resources;
         cells[i].ants[0] = myAnts;
         cells[i].ants[1] = oppAnts;
-
     }
 }
