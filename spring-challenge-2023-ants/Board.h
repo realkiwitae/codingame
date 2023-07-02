@@ -28,6 +28,8 @@ public:
     Player* me = &players[0];
     Player* opp = &players[1];
 
+    int allCrystals = 0;
+
     void init();
     void update();
 

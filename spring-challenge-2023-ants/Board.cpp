@@ -25,7 +25,7 @@ void Board::init(){
         
         Cell cell(i, type, initialResources, {neigh0, neigh1, neigh2, neigh3, neigh4, neigh5}, 0, 0);
         cells.push_back(cell);
-        
+        allCrystals += initialResources*(type == Cell::ECellType::CRYSTAL);
     }
 
     // allocate memory to distances_cache
