@@ -175,5 +175,6 @@ void drawArena(Board& b){
     cv::waitKey(0);
 }
 #else
+void draw_init(Board& b){}
 void drawArena(Board& b){}
 #endif
