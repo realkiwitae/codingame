@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#define DEBUG_ON 1
+#define DEBUG_ON 0
 #define INPUT_ON 1
 
 //logger with several arguments of different types

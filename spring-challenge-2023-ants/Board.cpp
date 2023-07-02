@@ -39,7 +39,7 @@ void Board::init(){
     // use floodfill exploration from each cell to find relative distances_cache between cells store in distances_cache
 
     for(auto c : cells){
-        if(c.type == Cell::EMPTY) continue;
+        //if(c.type == Cell::EMPTY) continue;
         std::vector<int> frontier;
         std::vector<int> next;
         frontier.push_back(c.index);
@@ -70,7 +70,7 @@ void Board::init(){
                 for(int i=0 ; i < 6; i++){
                     if(c.neighbors[i] < 0) continue;
                     if(cells[c.neighbors[i]].bReady)continue;
-                    cells[c.neighbors[i]].init(c.coord.neighbor(i).x, c.coord.neighbor(i).y, c.coord.neighbor(i).z);
+                    cells[c.neighbors[i]].init(c.coord.neighbor(i).q, c.coord.neighbor(i).r, c.coord.neighbor(i).s);
                 }
             }else{
                 bReady = false;

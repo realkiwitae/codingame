@@ -12,13 +12,13 @@ class CubeCoord {
     static CubeCoord CENTER;
 
 public:
-    int x, y, z;
+    int q, r, s;
 
 public:
-    CubeCoord(int x, int y, int z) : x(x), y(y), z(z) {}
+    CubeCoord(int x, int y, int z) : q(x), r(y), s(z) {}
 
     bool operator==(const CubeCoord& other) const {
-        return x == other.x && y == other.y && z == other.z;
+        return q == other.q && r == other.r && s == other.s;
     }
 
     bool operator!=(const CubeCoord& other) const {
@@ -30,9 +30,9 @@ public:
     }
 
     CubeCoord neighbor(int orientation, int distance) const {
-        int nx = x + directions[orientation].x * distance;
-        int ny = y + directions[orientation].y * distance;
-        int nz = z + directions[orientation].z * distance;
+        int nx = q + directions[orientation].q * distance;
+        int ny = r + directions[orientation].r * distance;
+        int nz = s + directions[orientation].s * distance;
 
         return CubeCoord(nx, ny, nz);
     }
@@ -50,10 +50,10 @@ public:
     }
 
     int distanceTo(const CubeCoord& dst) const {
-        return (std::abs(x - dst.x) + std::abs(y - dst.y) + std::abs(z - dst.z)) / 2;
+        return (std::abs(q - dst.q) + std::abs(r - dst.r) + std::abs(s - dst.s)) / 2;
     }
 
     CubeCoord getOpposite() const {
-        return CubeCoord(-x, -y, -z);
+        return CubeCoord(-q, -r, -s);
     }
 };
