@@ -35,7 +35,7 @@ enum EGamePhase{
 
 int main()
 {
-    if(INPUT_ON) freopen("input.txt", "r", stdin);
+    if(INPUT_ON) freopen("./utils/logs/input.txt", "r", stdin);
 
     EGamePhase gamePhase = EGamePhase::OPENING;
     Board board;
