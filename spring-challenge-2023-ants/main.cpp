@@ -39,7 +39,6 @@ int main()
 
     EGamePhase gamePhase = EGamePhase::OPENING;
     Board board;
-    int winCondition = 0;
 
     //////////////////
 

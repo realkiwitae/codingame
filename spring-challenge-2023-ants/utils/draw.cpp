@@ -104,6 +104,7 @@ void draw_init(Board& b){
     cv::rectangle(img, cv::Point2i(img.cols/2 - img.cols/4, 25), cv::Point2i(img.cols/2 + img.cols/4, 75), floor_color, -1);
     
     background = img.clone();
+
 }
 
 void drawArena(Board& b){
@@ -115,7 +116,7 @@ void drawArena(Board& b){
     img = background.clone();
     // draw hexagons
     for(auto& c : b.cells){
-        drawHexagon(c, floor_color, 20);
+//        drawHexagon(c, floor_color, 20);
         if(c.type == Cell::CRYSTAL){
             drawCircle(c, crystal_color, 20);
         }else if(c.type == Cell::EGG){
