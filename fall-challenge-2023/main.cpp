@@ -1,13 +1,14 @@
-#pragma once
-
-#include <iostream>
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <float.h>
-#include <unordered_map>
+#include <iostream>
 #include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <chrono>
+
 
 #include "utils/debug.h"
 
@@ -24,6 +25,7 @@ const static int BIGSCAN_COST = 5;
 
 const static int SCAN_CAPACITY = 30;
 const int CREATURES_COUNT = 12;
+int MIN_CREATURES_ID = INT_MAX;
 
 const int TYPE_0_Y = 7500/2;
 const int TYPE_1_Y = 12500/2;
@@ -45,29 +47,23 @@ int distance(const point& a,const point& b){
 }
 int score[5] = {1,2,3,3,4};
 
-vector<vector<string>> radar(5, vector<string>(CREATURES_COUNT, "BR"));
 
+// overide operator - for point
+point operator-(const point& a, const point& b){
+    return {a.first - b.first, a.second - b.second};
+}
+point operator+(const point& a, const point& b){
+    return {a.first + b.first, a.second + b.second};
+}
+point operator*(const point& a, const int& b){
+    return {a.first * b, a.second * b};
+}
 
 int nbDrones = 2;
+vector<vector<string>> radar;
 
 set<int> myDrones;
 set<int> foeDrones;
-
-int crea2ID(int id){return id - nbDrones;}
-
-enum class EAction{
-    SCAN,
-    BIGSCAN,
-    MOVE,
-    WAIT
-};
-
-enum class FSM{
-    IDLE,
-    CLEAR_ZONE,
-    SURFACE,
-};
-
 
 struct creature{
     int id;
@@ -75,7 +71,8 @@ struct creature{
     int type;
     point pos;
     point vel;
-    int lastSeen = -1;
+    bool dead = false;
+    bool visible = false;
     creature(int id, int color, int type, point pos, point vel):id(id), color(color), type(type), pos(pos), vel(vel){}
 };
 
@@ -86,21 +83,21 @@ struct Drone{
     int battery;
     Drone(int id, point pos, int emergency, int battery):id(id), pos(pos), emergency(emergency), battery(battery){}
     
-    FSM state = FSM::IDLE;
     int scanCount = 0;
     set<int> scannedCreatures;
 
     int targetZone = -1;
-    creature* target = nullptr;
+    int target = -1;
     int cooldown = 0;
 
-    void updateState();
-    void turn();
+    void tick();
 
 };
 
-vector<creature> creatures;
+vector<creature*> creatures;
 Drone* drones[10] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+int visible_creature_count;
+vector<int> scanningCreatures; 
 
 int main()
 {
@@ -129,15 +126,24 @@ int main()
         int color;
         int type;
         cin >> creature_id >> color >> type; cin.ignore();
-        creatures.push_back(creature(creature_id, color, type, {0,0}, {0,0}));
+        if(creatures.empty()){
+            MIN_CREATURES_ID = creature_id;
+            creatures = vector<creature*>(MIN_CREATURES_ID, nullptr);
+            scanningCreatures = vector<int>(CREATURES_COUNT + MIN_CREATURES_ID, 0);
+            radar = vector<vector<string>>(nbDrones*2, vector<string>((CREATURES_COUNT+MIN_CREATURES_ID)*nbDrones, "BR"));
+        }
+        creatures.push_back(new creature(creature_id, color, type, {0,0}, {0,0}));
     }
 
     
     int turn = 0;
-
-
-    // game loop
+    cerr << "game begin"<<endl;
+   // game loop
     while (1) {
+        // time loop in millisecond
+        chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    
+
         turn++;
         int my_score;
         cin >> my_score; cin.ignore();
@@ -145,6 +151,14 @@ int main()
         cin >> foe_score; cin.ignore();
         int my_scan_count;
         cin >> my_scan_count; cin.ignore();
+
+        for(auto& creature : creatures){
+            if(creature == nullptr) continue;
+            creature->dead = true;
+            creature->visible = false;
+        }
+
+
         for (int i = 0; i < my_scan_count; i++) {
             int creature_id;
             cin >> creature_id; cin.ignore();
@@ -203,9 +217,11 @@ int main()
             int creature_id;
             cin >> drone_id >> creature_id; cin.ignore();
             drones[drone_id]->scannedCreatures.insert(creature_id);
+            scanningCreatures[creature_id] = 2;
         }
-        int visible_creature_count;
+
         cin >> visible_creature_count; cin.ignore();
+        cerr << "visible creatures " << visible_creature_count <<endl;
         for (int i = 0; i < visible_creature_count; i++) {
             int creature_id;
             int creature_x;
@@ -214,112 +230,167 @@ int main()
             int creature_vy;
             cin >> creature_id >> creature_x >> creature_y >> creature_vx >> creature_vy; cin.ignore();
 
-            creatures[creature_id].pos = {creature_x, creature_y};
-            creatures[creature_id].vel = {creature_vx, creature_vy};
-            creatures[creature_id].lastSeen = turn;
+            creatures[creature_id]->pos = {creature_x, creature_y};
+            creatures[creature_id]->vel = {creature_vx, creature_vy};
+            creatures[creature_id]->visible = true;
+            creatures[creature_id]->dead = false;
         }
         int radar_blip_count;
         cin >> radar_blip_count; cin.ignore();
+        cerr << "blips " << radar_blip_count << " " << radar.size() << " " << radar[0].size() << " " << creatures.size() << endl;
+
         for (int i = 0; i < radar_blip_count; i++) {
             int drone_id;
             int creature_id;
             string loc;
             cin >> drone_id >> creature_id >> loc; cin.ignore();
-            radar[drone_id][crea2ID(creature_id)] = loc;
+            radar[drone_id][creature_id] = loc;
+            creatures[creature_id]->dead = false;
         }
+        cerr << "clear creat " <<endl;
 
+        for(int i = 0; i < (int) creatures.size();i++){
+            if(!creatures[i])continue;
+            if(!creatures[i]->dead)continue;
+            scanningCreatures[creatures[i]->id] = -1;
+            delete creatures[i];
+            creatures[i] = nullptr;
+        }
+        cerr << "tickin " <<endl;
 
         for (auto& i : myDrones){
-            drones[i]->updateState();
-            drones[i]->turn();
+            cerr << "tick -- " << drones[i]->id << endl;
+            drones[i]->tick();
+            cerr << "tick done..."<<endl;
         }
+
+        chrono::steady_clock::time_point end = chrono::steady_clock::now();
+        cerr << "turn " << turn << " took " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << "ms" << endl;
     }
 }
 
 
-void Drone::updateState(){
-    logger("updateState of drone", id);
-    if(state == FSM::IDLE){
-        for(int i = 0; i < 3;i++){
-            if(zones[i] == false){
-                state = FSM::CLEAR_ZONE;
-                targetZone = i;
-                logger("change to CLEARZONE", id , targetZone);
-                return;
+void Drone::tick(){
+
+    // Behavior tree
+    // Do we have a target ? 
+    //      Yes -> Is it in range ?
+    //          Yes -> Scan
+    //          No -> Move
+    //      No -> Target next creature in list type 0 first then 1 then 2
+    //          Is it in range ?
+    //              Yes -> Scan
+    //              No -> Move
+
+    // ove means get in range of the target > 800units or it get scared 
+
+    // if no target left
+       // do i have to surface?
+            // yes -> surface
+            // no -> scare the fishes
+    cerr << "tick " << id << endl;
+    cooldown--;
+
+    if(target>-1 && (scanningCreatures[target] == 2 || !creatures[target]) ){
+        target = -1;
+    }
+    if(target < 0){
+        // find a target
+
+        for(auto creature : creatures){
+            if(!creature)continue;
+            if(creature->dead)continue;
+            if(scanningCreatures[creature->id] == 0){
+                // target found 
+                cerr << "target found for drone id : " << id << " " << creature->id << endl;
+                target = creature->id;
+                scanningCreatures[target] = 1;
+                break;
             }
         }
     }
-    if(state == FSM::CLEAR_ZONE){
-        for(creature& c : creatures){
-            if(c.type == targetZone && !scannedCreatures.count(c.id)){
-                return;
-            }
-        }
-        zones[targetZone] = true;
-        state = FSM::SURFACE;
-        logger("change to SURFACE", id , targetZone);
 
+    // no target left
+    if(target <0){
+        // do i have to surface?
+        if(scannedCreatures.empty()){
+            // do nothing
+            cout << "WAIT 0 😴" << endl;
+            return;
+        }
+
+        // surface
+        // move towards the surface y < 500
+        bool shouldBigScan = pos.second > TARGETS_YT[0] && (battery >= BIGSCAN_COST) && (cooldown-- <= 0);
+        cout << "MOVE" << " " << pos.first << " " << 499;
+        if(shouldBigScan){
+            cooldown = 3;
+            cout << " 1 | ☀️ ";
+        }else{
+            cout << " 0 | ☀️ ";
+        }
+        cout << endl;
         return;
     }
 
-    if(state == FSM::SURFACE){
-        if(pos.second <= 500){
-            state = FSM::IDLE;
-            logger("change to IDLE", id , targetZone);
-            updateState();
-            return;
-        }
-    }
+    // target in range
+    // move toward target but stay within BISCAN_RAD and SCAN_RAD
+    // so the target pos should be target + norm(current - pos)*scan_rad
     
+    // check if any visible fishes visible and not tageted become the target
+    if(!creatures[target]->visible && visible_creature_count>0){
+        for(auto creature : creatures){
+            if(!creature)continue;
+            if(creature->dead)continue;
 
-}
-
-void Drone::turn(){
-    logger("turn of drone");
-    if(state == FSM::IDLE){
-        cout << "WAIT 0" << endl;
-        return;
-    }
-
-    if(state == FSM::SURFACE){
-        cout << "MOVE" << " " << pos.first << " " << 499 << " " << 0 << " ☀️" << endl;
-        return;
-    }
-
-    if(state == FSM::CLEAR_ZONE){
-        if(target == nullptr){
-            for(creature& c : creatures){
-                if(c.type == targetZone && !scannedCreatures.count(c.id)){
-                    target = &c;
-                    logger("found target");
-                    break;
+            if(creature->visible && scanningCreatures[creature->id] > -1 && scanningCreatures[creature->id] < 2){
+                if(scanningCreatures[target] == 1){
+                    for(auto& i : myDrones){
+                        if(drones[i]->id == id)continue; 
+                        if(drones[i]->target == target){
+                            drones[i]->target = -1;
+                        }
+                    }
                 }
-            }
-            if(!target){
-                updateState();
-                return;
-            }else{
-                turn();
+                scanningCreatures[target] = 0;
+                target = creature->id;
+                scanningCreatures[target] = 1;
+                break;
             }
         }
-        else{
-            // use radar info
-            if(scannedCreatures.count(target->id)){
-                target = nullptr;
-                turn();
-                return;
-            }
 
-            string loc = radar[id][crea2ID(target->id)];
-            bool inYRange = abs(pos.second - TARGETS_YT[targetZone]) < SCAN_RAD;
-            bool shouldBigScan = inYRange && (battery >= BIGSCAN_COST) && (cooldown-- <= 0);
-            if(shouldBigScan){
-                cooldown = 3;
-            }
-
-            cout << "MOVE" << " " << pos.first + (loc.back()=='R'?1:-1)*600 << " " << TARGETS_YT[targetZone] << " " << (shouldBigScan?1:0) << " 🕵️ "<<target->id << endl;
-            return;
-        }
     }
 
+    if(target < 0) cerr << "ERROOR" <<endl;
+    if(creatures[target]->visible){
+        // scan
+        point targetPos = creatures[target]->pos + (creatures[target]->pos - pos)* (SCAN_RAD / distance(pos, creatures[target]->pos));
+        cout << "MOVE" << " " << targetPos.first << " " << targetPos.second;
+
+        bool shouldBigScan = distance(pos, creatures[target]->pos) < BIGSCAN_RAD && (battery >= BIGSCAN_COST) && (cooldown-- <= 0);
+        if(shouldBigScan){
+            cooldown = 3;
+            cout << " 1 | 📡 " << creatures[target]->id;
+        }else{
+            cout << " 0 | 🕵️ " << creatures[target]->id;
+        }
+        cout << endl;
+        return;
+    }
+    // target not in range move towards it
+
+    string loc = radar[id][target];
+    targetZone = creatures[target]->type;
+    bool inYRange = abs(pos.second - TARGETS_YT[targetZone]) < SCAN_RAD;
+    bool shouldBigScan = inYRange && (battery >= BIGSCAN_COST) && (cooldown <= 0);
+
+    cout << "MOVE" << " " << pos.first + (loc.back()=='R'?1:-1)*600 << " " << TARGETS_YT[targetZone];
+    if(shouldBigScan){
+        cooldown = 3;
+        cout << " 1 | 🏃‍♀️ " << creatures[target]->id << " " << creatures[target]->pos.first << " " << creatures[target]->pos.second << " " << loc << " " << cooldown;
+    }else{
+        cout << " 0 | 🏃‍♀️ " << creatures[target]->id << " " << creatures[target]->pos.first << " " << creatures[target]->pos.second << " " << loc << " " << cooldown;
+    }
+    cout << endl;
+    return;
 }
